@@ -15,7 +15,8 @@ resource "null_resource" "ansible_playbook" {
       ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i '${var.public_ip},' ${var.playbook} \
       -e "ansible_host=${var.public_ip}" \
       -e "ansible_user=ansible" \
-      -e "ansible_ssh_private_key_file=${var.private_key_path}"
+      -e "ansible_ssh_private_key_file=${var.private_key_path}" \
+      -e "domain=${var.jenkins_fqdn}"
     EOT
 
     environment = {

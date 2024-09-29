@@ -1,8 +1,7 @@
-```markdown
 # AWS Infrastructure Automation with Terraform and Ansible
 
 ## Project Overview
-This project automates the provisioning of AWS infrastructure using **Terraform** and configures the EC2 instance with **Ansible**. Terraform handles the creation of an EC2 instance, Route53 configurations, security groups, and other resources, while also automatically executing the Ansible playbook to install and configure Apache on the instance.
+This project automates the provisioning of AWS infrastructure using **Terraform** and configures the EC2 instance with **Ansible**. Terraform handles the creation of an EC2 instance, Route53 configurations, security groups, and other resources, while also automatically executing the Ansible playbook to install and configure Apache on the instance. Additionally, it sets up Jenkins and Traefik using Docker Compose.
 
 ## Directory Structure
 ```plaintext
@@ -10,7 +9,13 @@ terraform/
 ├── ansible/
 │   ├── playbook.yml
 │   ├── hostfile
-│   └── ansible_keys/
+│   ├── ansible_keys/
+│   └── roles/
+│       └── jenkins_traefik/
+│           ├── tasks/
+│           │   └── main.yml
+│           └── templates/
+│               └── docker-compose.yml.j2
 ├── modules/
 │   ├── ec2/
 │   ├── null_resources/
@@ -115,15 +120,112 @@ ingress_ports = [
    ssh -i ./ansible/ansible_keys/<your-key-file> <your-username>@<instance-public-ip>
    ```
 
-7. **Access the Web Server**
-   Once the deployment is complete, you should be able to access your web server at:
-   ```
-   http://<your-domain-name>
-   ```
-   or
-   ```
-   http://<instance-public-ip>
-   ```
+
+## Jenkins and Traefik Configuration
+
+This project includes automated setup for Jenkins and Traefik using Docker Compose and Ansible.
+
+### Ansible Tasks (`roles/jenkins_traefik/tasks/main.yml`)
+
+The main tasks file includes steps to:
+1. Install Docker
+2. Install Docker Compose
+3. Create necessary directories
+4. Copy the Docker Compose template
+5. Start Jenkins and Traefik using Docker Compose
+
+```yaml
+---
+
+- name: Install Docker
+  apt:
+    name: docker.io
+    state: present
+    update_cache: yes
+
+
+- name: Install Docker Compose
+  get_url:
+    url: "https://github.com/docker/compose/releases/download/v2.21.2/docker-compose-{{ ansible_system | lower }}-{{ ansible_architecture }}"
+    dest: "/usr/local/bin/docker-compose"
+    mode: '0755'
+
+
+- name: Create Jenkins directory
+  file:
+    path: /opt/jenkins-traefik
+    state: directory
+    mode: '0755'
+
+
+- name: Copy docker-compose.yml file
+  template:
+    src: docker-compose.yml.j2
+    dest: /opt/jenkins-traefik/docker-compose.yml
+
+
+
+- name: Run Docker Compose to start Jenkins and Traefik
+  command: docker-compose up -d
+  args:
+    chdir: /opt/jenkins-traefik
+```
+
+### Docker Compose Template (`roles/jenkins_traefik/templates/docker-compose.yml.j2`)
+
+This template defines the services for Jenkins and Traefik:
+
+```yaml
+version: '3.8'
+
+services:
+  traefik:
+    image: traefik:v2.10
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--entrypoints.web.address=:80"
+    ports:
+      - "80:80"
+      - "8080:8080"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+
+  jenkins:
+    image: jenkins/jenkins:lts
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.jenkins.rule=Host(`jenkins.domain.com`)"
+      - "traefik.http.routers.jenkins.entrypoints=web"
+      - "traefik.http.services.jenkins.loadbalancer.server.port=8080"
+    environment:
+      - JENKINS_OPTS=--httpPort=8080
+    volumes:
+      - jenkins_home:/var/jenkins_home
+
+volumes:
+  jenkins_home:
+```
+
+### Updating Your Playbook
+
+To include this new role in your Ansible playbook, update your `playbook.yml`:
+
+```yaml
+---
+- hosts: all
+  become: yes
+  roles:
+    - jenkins_traefik
+```
+
+### Accessing Jenkins
+
+Once deployed, Jenkins will be accessible via:
+```
+http://jenkins.domain.com
+```
+Replace `domain.com` with your actual domain.
 
 ## Cleaning Up
 To remove all resources created by Terraform, run:
@@ -146,3 +248,4 @@ If you encounter any issues:
 
 ## Contributing
 Contributions to this project are welcome. Please fork the repository and submit a pull request with your proposed changes.
+

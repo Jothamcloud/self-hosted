@@ -19,3 +19,8 @@ variable "public_ip" {
   description = "The public IP address of the EC2 instance"
   type        = string
 }
+
+variable "jenkins_fqdn" {
+  description = "The fully qualified donaim name for route53"
+  type        = string
+}

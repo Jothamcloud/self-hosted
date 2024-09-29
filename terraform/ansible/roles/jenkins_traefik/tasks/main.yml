@@ -1,0 +1,29 @@
+---
+
+- name: Install Docker
+  apt:
+    name: docker.io
+    state: present
+    update_cache: yes
+
+- name: Install Docker Compose
+  get_url:
+    url: "https://github.com/docker/compose/releases/download/v2.29.7/docker-compose-{{ ansible_system | lower }}-{{ ansible_architecture }}"
+    dest: "/usr/local/bin/docker-compose"
+    mode: '0755'
+
+- name: Create Jenkins directory
+  file:
+    path: /opt/jenkins-traefik
+    state: directory
+    mode: '0755'
+
+- name: Copy docker-compose.yml file
+  template:
+    src: docker-compose.yml.j2
+    dest: /opt/jenkins-traefik/docker-compose.yml
+
+- name: Run Docker Compose to start Jenkins and Traefik
+  command: docker-compose up -d
+  args:
+    chdir: /opt/jenkins-traefik
