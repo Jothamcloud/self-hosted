@@ -1,0 +1,2 @@
+[all]
+my_web_server ansible_host={{ ansible_host }} ansible_user={{ ansible_user }} ansible_ssh_private_key_file={{ ansible_ssh_private_key_file }}

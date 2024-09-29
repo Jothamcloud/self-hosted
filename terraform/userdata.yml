@@ -1,0 +1,11 @@
+#cloud-config
+users:
+  - name: ansible
+    gecos: Ansible User
+    groups: [sudo]
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    shell: /bin/bash
+    lock_passwd: true
+    ssh-authorized-keys:
+      - ${public_key}
+      # - "{{ public_key }}"
