@@ -3,20 +3,22 @@ resource "null_resource" "ansible_playbook" {
     instance_id = var.instance_id
   }
 
+ 
   depends_on = [var.instance_id]
 
   provisioner "local-exec" {
     command = <<EOT
-      while ! nc -z ${var.public_ip} 22; do   
-        echo "Waiting for SSH to be available..."
-        sleep 90
-      done
+      # Wait for 90 seconds to allow the server to initialize and SSH service to be ready
+      echo "Waiting for 70 seconds for SSH to be available..."
+      sleep 70
 
+      # Running the Ansible playbook
       ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i '${var.public_ip},' ${var.playbook} \
       -e "ansible_host=${var.public_ip}" \
       -e "ansible_user=ansible" \
       -e "ansible_ssh_private_key_file=${var.private_key_path}" \
-      -e "domain=${var.jenkins_fqdn}"
+      -e "domain=${var.jenkins_fqdn}" \
+      -e "ansible_ssh_port=${var.ssh_port}"
     EOT
 
     environment = {

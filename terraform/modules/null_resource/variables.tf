@@ -24,3 +24,8 @@ variable "jenkins_fqdn" {
   description = "The fully qualified donaim name for route53"
   type        = string
 }
+
+variable "ssh_port" {
+  description = "The port number for SSH access to the server"
+  type        = number
+}

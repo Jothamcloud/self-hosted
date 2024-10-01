@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  traefik:
+    image: traefik:v2.10
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443" 
+      - "--certificatesresolvers.myresolver.acme.httpchallenge=true"
+      - "--certificatesresolvers.myresolver.acme.httpchallenge.entrypoint=web"
+      - "--certificatesresolvers.myresolver.acme.email=yr-arinzejotham01@gmail.com"  
+      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"  
+      - "--entrypoints.web.http.redirections.entryPoint.to=websecure"  
+      - "--entrypoints.web.http.redirections.entryPoint.scheme=https" 
+    ports:
+      - "80:80"
+      - "443:443"  
+      - "8080:8080"  
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "./letsencrypt:/letsencrypt"  
+
+  jenkins:
+    image: jenkins/jenkins:lts
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.jenkins.rule=Host(`{{ domain }}`)"  
+      - "traefik.http.routers.jenkins.entrypoints=websecure"  
+      - "traefik.http.services.jenkins.loadbalancer.server.port=8080"
+      - "traefik.http.routers.jenkins.tls.certresolver=myresolver"  
+    environment:
+      - JENKINS_OPTS=--httpPort=8080
+    volumes:
+      - jenkins_home:/var/jenkins_home
+
+volumes:
+  jenkins_home:

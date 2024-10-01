@@ -14,6 +14,13 @@ resource "aws_security_group" "this" {
     }
   }
 
+  ingress {
+    from_port   = var.ssh_port
+    to_port     = var.ssh_port
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+    description = "Allow SSH access on the specified port"
+  }
   egress {
     from_port   = 0
     to_port     = 0

@@ -23,3 +23,8 @@ variable "security_tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "ssh_port" {
+  description = "SSH port to be used by the server"
+  type        = number
+}

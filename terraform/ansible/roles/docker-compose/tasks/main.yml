@@ -1,0 +1,15 @@
+- name: Create docker-compose directory
+  file:
+    path: /opt/docker-compose
+    state: directory
+    mode: '0755'
+
+- name: Copy docker-compose.yml file
+  template:
+    src: docker-compose.yml.j2
+    dest: /opt/docker-compose/docker-compose.yml
+
+- name: Run Docker Compose to start Jenkins and Traefik
+  command: docker-compose up -d
+  args:
+    chdir: /opt/docker-compose

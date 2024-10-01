@@ -24,15 +24,18 @@ data "aws_subnet" "default" {
 }
 
 module "ec2_instance" {
-  source    = "./modules/ec2"
-  subnet_id = data.aws_subnet.default[0].id 
+  source              = "./modules/ec2"
+  subnet_id           = data.aws_subnet.default[0].id 
   instance_type       = var.instance_type
-  security_group_ids  = [module.security_group.security_group_id]
+  security_group_ids   = [module.security_group.security_group_id]
   key_name            = var.key_name
   instance_name       = var.instance_name
   ami                 = var.ami
-  user_data           = templatefile("./userdata.yml", { public_key = file("./ansible_key.pub") })
 
+  user_data = templatefile("./userdata.yml", {
+    public_key = file("./ansible_key.pub"),
+    ssh_port   = var.ssh_port
+  }) 
 }
 
 module "security_group" {
@@ -41,6 +44,7 @@ module "security_group" {
   ingress_ports   = var.ingress_ports
   security_name   = var.security_name
   security_tags   = var.security_tags
+  ssh_port       = var.ssh_port
 }
 
 module "route53" {
@@ -58,6 +62,8 @@ module "null_resource" {
   private_key_path = "./ansible_key"  
   public_ip         = module.ec2_instance.public_ip
   jenkins_fqdn    = module.route53.jenkins_fqdn
+  ssh_port       = var.ssh_port
+
 }
 
 output "ec2_instance_id" {

@@ -60,3 +60,7 @@ variable "domain_name" {
   type        = string
 }
 
+variable "ssh_port" {
+  description = "The port number for SSH access to the server"
+  type        = number
+}
