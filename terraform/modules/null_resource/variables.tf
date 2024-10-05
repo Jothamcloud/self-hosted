@@ -20,12 +20,42 @@ variable "public_ip" {
   type        = string
 }
 
-variable "jenkins_fqdn" {
-  description = "The fully qualified donaim name for route53"
-  type        = string
-}
+# variable "domain_name" {
+#   description = "The fully qualified donaim name for route53"
+#   type        = string
+# }
 
 variable "ssh_port" {
   description = "The port number for SSH access to the server"
   type        = number
+}
+
+variable "jenkins_fqdn" {
+  description = ""
+  type        = string
+}
+
+variable "grafana_fqdn" {
+  description = ""
+  type        = string
+}
+
+variable "prometheus_fqdn" {
+  description = ""
+  type        = string
+}
+
+variable "vault_fqdn" {
+  description = ""
+  type        = string
+}
+
+variable "docker_hub_username" {
+  description = ""
+  type        = string
+}
+
+variable "docker_hub_password" {
+  description = ""
+  type        = string
 }

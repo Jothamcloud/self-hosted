@@ -17,7 +17,12 @@ resource "null_resource" "ansible_playbook" {
       -e "ansible_host=${var.public_ip}" \
       -e "ansible_user=ansible" \
       -e "ansible_ssh_private_key_file=${var.private_key_path}" \
-      -e "domain=${var.jenkins_fqdn}" \
+      -e "j_domain=${var.jenkins_fqdn}" \
+      -e "g_domain=${var.grafana_fqdn}" \
+      -e "p_domain=${var.prometheus_fqdn}" \
+      -e "v_domain=${var.vault_fqdn}" \
+      -e "docker_hub_username=${var.docker_hub_username}" \
+      -e "docker_hub_password=${var.docker_hub_password}" \
       -e "ansible_ssh_port=${var.ssh_port}"
     EOT
 

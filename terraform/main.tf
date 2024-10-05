@@ -61,9 +61,13 @@ module "null_resource" {
   playbook       = "./ansible/playbook.yml"
   private_key_path = "./ansible_key"  
   public_ip         = module.ec2_instance.public_ip
-  jenkins_fqdn    = module.route53.jenkins_fqdn
+  jenkins_fqdn = module.route53.jenkins_fqdn
+  grafana_fqdn = module.route53.grafana_fqdn
+  prometheus_fqdn = module.route53.prometheus_fqdn
+  vault_fqdn  = module.route53.vault_fqdn
   ssh_port       = var.ssh_port
-
+  docker_hub_password  = var.docker_hub_password
+  docker_hub_username  = var.docker_hub_password
 }
 
 output "ec2_instance_id" {

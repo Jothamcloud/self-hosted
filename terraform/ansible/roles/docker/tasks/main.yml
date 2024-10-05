@@ -1,11 +1,2 @@
-- name: Install Docker
-  apt:
-    name: docker.io
-    state: present
-    update_cache: yes
-
-- name: Install Docker Compose
-  get_url:
-    url: "https://github.com/docker/compose/releases/download/v2.29.7/docker-compose-{{ ansible_system | lower }}-{{ ansible_architecture }}"
-    dest: "/usr/local/bin/docker-compose"
-    mode: '0755'
+- include_tasks: docker-install.yml
+- include_tasks: network.yml

@@ -1,0 +1,45 @@
+---
+- name: Download and Install Prometheus node_exporter
+  block:
+    - name: Get node_exporter release
+      ansible.builtin.get_url:
+        url: "https://github.com/prometheus/node_exporter/releases/download/v1.8.2/node_exporter-1.8.2.linux-amd64.tar.gz"
+        dest: /tmp/node_exporter.tar.gz
+
+    - name: Unpack archive
+      ansible.builtin.unarchive:
+        src: /tmp/node_exporter.tar.gz
+        dest: /tmp
+        remote_src: yes
+
+    - name: Copy binary
+      ansible.builtin.copy:
+        src: "/tmp/node_exporter-1.8.2.linux-amd64/node_exporter"
+        dest: /usr/bin/node_exporter
+        mode: '0755'
+        remote_src: yes
+
+- name: Setup Prometheus node_exporter user & systemd service
+  block:
+    - name: Create node_exporter user
+      ansible.builtin.user:
+        name: node_exporter
+        system: yes
+        shell: /bin/false
+        create_home: no
+
+    - name: Create systemd service file for node_exporter
+      ansible.builtin.copy:
+        src: files/node_exporter.service
+        dest: /etc/systemd/system/node_exporter.service
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Reload systemd
+
+    - name: Ensure node_exporter service is enabled and started
+      ansible.builtin.systemd:
+        name: node_exporter
+        state: started
+        enabled: yes
+        daemon_reload: yes

@@ -1,0 +1,4 @@
+- name: Set the system hostname
+  ansible.builtin.hostname:
+    name: server
+    use: systemd

@@ -64,3 +64,13 @@ variable "ssh_port" {
   description = "The port number for SSH access to the server"
   type        = number
 }
+
+variable "docker_hub_username" {
+  description = ""
+  type        = string
+}
+
+variable "docker_hub_password" {
+  description = ""
+  type        = string
+}

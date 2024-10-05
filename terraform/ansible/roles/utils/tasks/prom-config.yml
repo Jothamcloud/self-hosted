@@ -1,0 +1,48 @@
+- name: Create prometheus user
+  ansible.builtin.user:
+    name: prometheus
+    system: yes
+    shell: /bin/false
+    create_home: no
+
+- name: Ensure the Prometheus directory exists
+  ansible.builtin.file:
+    path: /etc/prometheus
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Ensure the prometheus.yml file exists
+  ansible.builtin.file:
+    path: /etc/prometheus/prometheus.yml
+    state: touch 
+    owner: prometheus
+    group: prometheus
+    mode: '0644'
+
+- name: Ensure file has targets syntax
+  ansible.builtin.lineinfile:
+    path: /etc/prometheus/prometheus.yml
+    line: "scrape_configs:"
+    owner: prometheus
+    group: prometheus
+
+- name: Add host server and Prometheus container as static targets
+  ansible.builtin.blockinfile:
+    path: /etc/prometheus/prometheus.yml
+    insertafter: "^scrape_configs:"
+    marker: "# {mark} ANSIBLE MANAGED BLOCK"
+    block: |
+      - job_name: 'Host Server'
+        static_configs:
+          - targets:
+            - '192.168.100.1:9100'
+        scrape_interval: 15s
+      - job_name: 'Prometheus Container'
+        static_configs:
+          - targets:
+            - 'prometheus:9090'
+        scrape_interval: 30s
+    owner: prometheus
+    group: prometheus
