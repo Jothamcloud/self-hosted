@@ -95,39 +95,10 @@ services:
     networks:
       - docker-network
 
-  artifactory:
-    image: releases-docker.jfrog.io/jfrog/artifactory-oss:latest
-    container_name: artifactory
-    restart: unless-stopped
-    environment:
-      - JF_ROUTER_ENTRYPOINTS_EXTERNALPORT=8081
-      - JF_SHARED_NODE_ID=art1
-      - JF_SHARED_NODE_NAME=art1
-      - JF_SHARED_SECURITY_JOINKEY=Jotham577@
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.artifactory-http.entrypoints=web"
-      - "traefik.http.routers.artifactory-http.rule=Host(`{{ v_domain }}`)"
-      - "traefik.http.services.artifactory.loadbalancer.server.port=8081"
-      - "traefik.http.routers.artifactory-https.tls=true"
-      - "traefik.http.routers.artifactory-https.tls.certresolver=myresolver"
-      - "traefik.http.routers.artifactory-https.entrypoints=websecure"
-      - "traefik.http.routers.artifactory-https.rule=Host(`{{ v_domain }}`)"
-      - "traefik.http.routers.artifactory-http.middlewares=redirect-https"
-      - "traefik.http.middlewares.redirect-https.redirectscheme.scheme=https"
-      - "traefik.http.middlewares.redirect-https.redirectscheme.permanent=true"
-    ports:
-      - "8081:8081"
-    volumes:
-      - artifactory_data:/var/opt/jfrog/artifactory
-    networks:
-      - docker-network
-
 volumes:
   traefik_letsencrypt:
   jenkins_data:
   grafana_data:
-  artifactory_data:
 
 networks:
   docker-network:

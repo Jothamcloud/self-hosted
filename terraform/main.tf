@@ -66,8 +66,6 @@ module "null_resource" {
   prometheus_fqdn = module.route53.prometheus_fqdn
   vault_fqdn  = module.route53.vault_fqdn
   ssh_port       = var.ssh_port
-  docker_hub_password  = var.docker_hub_password
-  docker_hub_username  = var.docker_hub_password
 }
 
 output "ec2_instance_id" {

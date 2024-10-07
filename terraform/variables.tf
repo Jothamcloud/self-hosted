@@ -65,12 +65,3 @@ variable "ssh_port" {
   type        = number
 }
 
-variable "docker_hub_username" {
-  description = ""
-  type        = string
-}
-
-variable "docker_hub_password" {
-  description = ""
-  type        = string
-}

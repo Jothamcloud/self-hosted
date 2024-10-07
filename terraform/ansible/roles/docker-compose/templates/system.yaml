@@ -1,8 +1,0 @@
-shared:
-  node:
-    id: "art1"
-    name: "art1"
-  database:
-    type: "derby"
-  security:
-    joinKey: "Jotham577@"

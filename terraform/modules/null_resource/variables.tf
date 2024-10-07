@@ -49,13 +49,3 @@ variable "vault_fqdn" {
   description = ""
   type        = string
 }
-
-variable "docker_hub_username" {
-  description = ""
-  type        = string
-}
-
-variable "docker_hub_password" {
-  description = ""
-  type        = string
-}

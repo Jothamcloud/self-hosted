@@ -21,8 +21,6 @@ resource "null_resource" "ansible_playbook" {
       -e "g_domain=${var.grafana_fqdn}" \
       -e "p_domain=${var.prometheus_fqdn}" \
       -e "v_domain=${var.vault_fqdn}" \
-      -e "docker_hub_username=${var.docker_hub_username}" \
-      -e "docker_hub_password=${var.docker_hub_password}" \
       -e "ansible_ssh_port=${var.ssh_port}"
     EOT
 
