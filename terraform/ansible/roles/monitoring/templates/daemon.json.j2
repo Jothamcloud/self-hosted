@@ -1,0 +1,12 @@
+{
+  "debug": true,
+  "log-driver": "loki",
+  "log-opts": {
+    "loki-url": "http://localhost:3100/loki/api/v1/push",
+    "loki-batch-size": "400",
+    "loki-max-backoff": "800ms",
+    "loki-retries": "2",
+    "loki-timeout": "1s",
+    "keep-file": "true"
+  }
+}

@@ -65,7 +65,12 @@ module "null_resource" {
   grafana_fqdn = module.route53.grafana_fqdn
   prometheus_fqdn = module.route53.prometheus_fqdn
   vault_fqdn  = module.route53.vault_fqdn
+  loki_fqdn  = module.route53.loki_fqdn
   ssh_port       = var.ssh_port
+  s3_bucket_name  = var.s3_bucket_name
+  s3_access_key = var.s3_access_key
+  s3_secret_key = var.s3_secret_key
+  restore   = var.restore
 }
 
 output "ec2_instance_id" {
@@ -92,4 +97,8 @@ output "prometheus_fqdn" {
 
 output "vault_fqdn" {
   value = module.route53.vault_fqdn
+}
+
+output "loki_fqdn" {
+  value = module.route53.loki_fqdn
 }

@@ -45,3 +45,15 @@ resource "aws_route53_record" "vault" {
 output "vault_fqdn" {
   value = aws_route53_record.vault.fqdn
 }
+
+resource "aws_route53_record" "loki" {
+  zone_id = var.zone_id
+  name    = "loki.${var.domain_name}"
+  type    = "A"
+  ttl     = 300
+  records = [var.public_ip]
+}
+
+output "loki_fqdn" {
+  value = aws_route53_record.loki.fqdn
+}

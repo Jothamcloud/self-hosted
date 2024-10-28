@@ -1,0 +1,35 @@
+- name: Install required packages
+  become: true
+  ansible.builtin.apt:
+    name:
+      - python3-pip
+      - python3-boto3
+    state: present
+    update_cache: yes
+
+- name: Ensure docker-compose directory exists
+  become: true
+  ansible.builtin.file:
+    path: "/opt/docker-compose"
+    state: directory
+    mode: '0755'
+    owner: ansible
+    group: ansible
+
+- name: Ensure docker-compose.yml exists
+  ansible.builtin.stat:
+    path: "/opt/docker-compose/docker-compose.yml"
+  register: compose_file
+
+- name: Copy restore script to remote server
+  ansible.builtin.template:
+    src: restore_script.py.j2
+    dest: "/home/ansible/restore.py"
+    mode: '0755'
+    owner: ansible
+    group: ansible
+
+- name: Run restore script
+  ansible.builtin.command: python3 /home/ansible/restore.py
+  args:
+    chdir: /opt/docker-compose

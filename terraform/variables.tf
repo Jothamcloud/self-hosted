@@ -65,3 +65,18 @@ variable "ssh_port" {
   type        = number
 }
 
+variable "s3_bucket_name" {
+  type = string
+}
+
+variable "s3_access_key" {
+  type =string
+}
+
+variable "s3_secret_key" {
+  type = string
+}
+
+variable "restore" {
+  type = string
+}

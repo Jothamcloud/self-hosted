@@ -10,4 +10,13 @@
 - hosts: all
   become: yes
   roles:
+    - monitoring
     - docker-compose
+    - backups
+
+- hosts: all
+  become: yes
+  tasks:
+    - include_role:
+        name: restore
+      when: restore == 'true'

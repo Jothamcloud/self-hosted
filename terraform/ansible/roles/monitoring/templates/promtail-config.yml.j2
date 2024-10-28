@@ -1,0 +1,42 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  # System Logs
+  - job_name: system
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: varlogs
+          host: {{ ansible_hostname }}
+          __path__: /var/log/*log
+
+  # Backup Script Logs
+  - job_name: backup_logs
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: backup
+          host: {{ ansible_hostname }}
+          __path__: /var/log/syslog
+    pipeline_stages:
+      - match:
+          selector: '{job="backup"}'
+          stages:
+            - regex:
+                expression: "docker-backup(.+)"
+                labels:
+                  type: backup
+            - regex:
+                expression: "docker-backup-cleanup(.+)"
+                labels:
+                  type: cleanup

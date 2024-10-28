@@ -1,105 +1,161 @@
 version: '3'
 
 services:
-  traefik:
-    image: traefik:v2
-    container_name: traefik
-    restart: unless-stopped
-    command:
-      - "--log.level=DEBUG"
-      - "--api.insecure=true"
-      - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
-      - "--entrypoints.web.address=:80"
-      - "--entrypoints.websecure.address=:443"
-      - "--certificatesresolvers.myresolver.acme.httpchallenge=true"
-      - "--certificatesresolvers.myresolver.acme.httpchallenge.entrypoint=web"
-      - "--certificatesresolvers.myresolver.acme.email=arinzejotham01@gmail.com"
-      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
-    ports:
-      - "80:80"
-      - "443:443"
-      - "8080:8080"  # Traefik dashboard
-    volumes:
-      - "/var/run/docker.sock:/var/run/docker.sock:ro"
-      - traefik_letsencrypt:/letsencrypt
-    networks:
-      - docker-network
+ traefik:
+   image: traefik:v2
+   container_name: traefik
+   restart: unless-stopped
+   command:
+     - "--log.level=DEBUG"
+     - "--api.insecure=true"
+     - "--providers.docker=true"
+     - "--providers.docker.exposedbydefault=false"
+     - "--entrypoints.web.address=:80"
+     - "--entrypoints.websecure.address=:443"
+     - "--certificatesresolvers.myresolver.acme.httpchallenge=true"
+     - "--certificatesresolvers.myresolver.acme.httpchallenge.entrypoint=web"
+     - "--certificatesresolvers.myresolver.acme.email=arinzejotham01@gmail.com"
+     - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+     - "--metrics.prometheus=true"
+     - "--metrics.prometheus.buckets=0.1,0.3,1.2,5.0"
+     - "--log.level=ERROR"
+   ports:
+     - "80:80"
+     - "443:443"
+     - "8080:8080"  # Traefik dashboard
+   expose:
+     - "8080"
+   volumes:
+     - "/var/run/docker.sock:/var/run/docker.sock:ro"
+     - traefik_letsencrypt:/letsencrypt
+   networks:
+     - docker-network
 
-  jenkins:
-    image: jenkins/jenkins:lts
-    container_name: jenkins
-    restart: unless-stopped
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.jenkins-http.entrypoints=web"
-      - "traefik.http.routers.jenkins-http.rule=Host(`{{ j_domain }}`)"
-      - "traefik.http.services.jenkins.loadbalancer.server.port=8080"
-      - "traefik.http.routers.jenkins-https.tls=true"
-      - "traefik.http.routers.jenkins-https.tls.certresolver=myresolver"
-      - "traefik.http.routers.jenkins-https.entrypoints=websecure"
-      - "traefik.http.routers.jenkins-https.rule=Host(`{{ j_domain }}`)"
-      - "traefik.http.routers.jenkins-http.middlewares=redirect-https"
-      - "traefik.http.middlewares.redirect-https.redirectScheme.scheme=https"
-      - "traefik.http.middlewares.redirect-https.redirectScheme.permanent=true"
-    expose:
-      - "8080"
-    volumes:
-      - jenkins_data:/var/jenkins_home
-    networks:
-      - docker-network
+ jenkins:
+   image: jenkins/jenkins:lts
+   container_name: jenkins
+   restart: unless-stopped
+   labels:
+     - "traefik.enable=true"
+     - "traefik.http.routers.jenkins-http.entrypoints=web"
+     - "traefik.http.routers.jenkins-http.rule=Host(`{{ j_domain }}`)"
+     - "traefik.http.services.jenkins.loadbalancer.server.port=8080"
+     - "traefik.http.routers.jenkins-https.tls=true"
+     - "traefik.http.routers.jenkins-https.tls.certresolver=myresolver"
+     - "traefik.http.routers.jenkins-https.entrypoints=websecure"
+     - "traefik.http.routers.jenkins-https.rule=Host(`{{ j_domain }}`)"
+     - "traefik.http.routers.jenkins-http.middlewares=redirect-https"
+     - "traefik.http.middlewares.redirect-https.redirectScheme.scheme=https"
+     - "traefik.http.middlewares.redirect-https.redirectScheme.permanent=true"
+   expose:
+     - "8080"
+   volumes:
+     - jenkins_data:/var/jenkins_home
+   networks:
+     - docker-network
 
-  prometheus:
-    image: prom/prometheus
-    container_name: prometheus
-    restart: unless-stopped
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.prometheus-http.entrypoints=web"
-      - "traefik.http.routers.prometheus-http.rule=Host(`{{ p_domain }}`)"
-      - "traefik.http.services.prometheus.loadbalancer.server.port=9090"
-      - "traefik.http.routers.prometheus-https.tls=true"
-      - "traefik.http.routers.prometheus-https.tls.certresolver=myresolver"
-      - "traefik.http.routers.prometheus-https.entrypoints=websecure"
-      - "traefik.http.routers.prometheus-https.rule=Host(`{{ p_domain }}`)"
-      - "traefik.http.routers.prometheus-http.middlewares=redirect-https"
-      - "traefik.http.middlewares.redirect-https.redirectScheme.scheme=https"
-      - "traefik.http.middlewares.redirect-https.redirectScheme.permanent=true"
-    expose:
-      - "9090"
-    volumes:
-      - /etc/prometheus:/etc/prometheus
-    networks:
-      - docker-network
+ prometheus:
+   image: prom/prometheus
+   container_name: prometheus
+   restart: unless-stopped
+   labels:
+     - "traefik.enable=true"
+     - "traefik.http.routers.prometheus-http.entrypoints=web"
+     - "traefik.http.routers.prometheus-http.rule=Host(`{{ p_domain }}`)"
+     - "traefik.http.services.prometheus.loadbalancer.server.port=9090"
+     - "traefik.http.routers.prometheus-https.tls=true"
+     - "traefik.http.routers.prometheus-https.tls.certresolver=myresolver"
+     - "traefik.http.routers.prometheus-https.entrypoints=websecure"
+     - "traefik.http.routers.prometheus-https.rule=Host(`{{ p_domain }}`)"
+     - "traefik.http.routers.prometheus-http.middlewares=redirect-https"
+     - "traefik.http.middlewares.redirect-https.redirectScheme.scheme=https"
+     - "traefik.http.middlewares.redirect-https.redirectScheme.permanent=true"
+   expose:
+     - "9090"
+   volumes:
+     - /etc/prometheus:/etc/prometheus
+   networks:
+     - docker-network
+  
+ grafana:
+   image: grafana/grafana-oss
+   container_name: grafana
+   restart: unless-stopped
+   labels:
+     - "traefik.enable=true"
+     - "traefik.http.routers.grafana-http.entrypoints=web"
+     - "traefik.http.routers.grafana-http.rule=Host(`{{ g_domain }}`)"
+     - "traefik.http.services.grafana.loadbalancer.server.port=3000"
+     - "traefik.http.routers.grafana-https.tls=true"
+     - "traefik.http.routers.grafana-https.tls.certresolver=myresolver"
+     - "traefik.http.routers.grafana-https.entrypoints=websecure"
+     - "traefik.http.routers.grafana-https.rule=Host(`{{ g_domain }}`)"
+     - "traefik.http.routers.grafana-http.middlewares=redirect-https"
+     - "traefik.http.middlewares.redirect-https.redirectScheme.scheme=https"
+     - "traefik.http.middlewares.redirect-https.redirectScheme.permanent=true"
+   expose:
+     - "3000"
+   volumes:
+     - grafana_data:/var/lib/grafana
+   networks:
+     - docker-network
+   
 
-  grafana:
-    image: grafana/grafana-oss
-    container_name: grafana
-    restart: unless-stopped
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.grafana-http.entrypoints=web"
-      - "traefik.http.routers.grafana-http.rule=Host(`{{ g_domain }}`)"
-      - "traefik.http.services.grafana.loadbalancer.server.port=3000"
-      - "traefik.http.routers.grafana-https.tls=true"
-      - "traefik.http.routers.grafana-https.tls.certresolver=myresolver"
-      - "traefik.http.routers.grafana-https.entrypoints=websecure"
-      - "traefik.http.routers.grafana-https.rule=Host(`{{ g_domain }}`)"
-      - "traefik.http.routers.grafana-http.middlewares=redirect-https"
-      - "traefik.http.middlewares.redirect-https.redirectScheme.scheme=https"
-      - "traefik.http.middlewares.redirect-https.redirectScheme.permanent=true"
-    expose:
-      - "3000"
-    volumes:
-      - grafana_data:/var/lib/grafana
-    networks:
-      - docker-network
+ loki:
+   image: grafana/loki:latest
+   container_name: loki
+   user: "10001:10001"
+   restart: unless-stopped
+   ports:
+     - "3100:3100"
+   expose:
+     - "3100"
+   volumes:
+     - loki_data:/loki
+     - /opt/docker-compose/config/loki/config.yml:/etc/loki/local-config.yaml
+   command: -config.file=/etc/loki/local-config.yaml
+   networks:
+     - docker-network
 
+ promtail:
+   image: grafana/promtail:latest
+   container_name: promtail
+   restart: unless-stopped
+   volumes:
+     - /var/log:/var/log:ro
+     - /opt/docker-compose/config/promtail/config.yml:/etc/promtail/config.yml
+     - /var/lib/docker/containers:/var/lib/docker/containers:ro
+   command: -config.file=/etc/promtail/config.yml
+   networks:
+     - docker-network
+
+ cadvisor:
+   image: gcr.io/cadvisor/cadvisor:v0.47.2
+   container_name: cadvisor
+   restart: unless-stopped
+   privileged: true
+   volumes:
+     - /:/rootfs:ro
+     - /var/run:/var/run:ro
+     - /sys:/sys:ro
+     - /var/lib/docker/:/var/lib/docker:ro
+     - /dev/disk/:/dev/disk:ro
+     - /dev/kmsg:/dev/kmsg
+   expose:
+     - "8080"
+   networks:
+     - docker-network
+  
 volumes:
-  traefik_letsencrypt:
-  jenkins_data:
-  grafana_data:
+ traefik_letsencrypt:
+   name: sh_traefik_letsencrypt
+ jenkins_data:
+   name: sh_jenkins_data
+ grafana_data:
+   name: sh_grafana_data
+ loki_data:
+   name: sh_loki_data
 
 networks:
-  docker-network:
-    external: true
+ docker-network:
+   external: true

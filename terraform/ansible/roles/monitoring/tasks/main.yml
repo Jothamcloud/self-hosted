@@ -1,0 +1,67 @@
+- name: Install Docker Loki plugin
+  command: docker plugin install grafana/loki-docker-driver:latest --alias loki --grant-all-permissions
+  ignore_errors: yes
+
+- name: Create logging directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0755'
+    owner: ansible
+    group: ansible
+  with_items:
+    - "/opt/docker-compose/config"
+    - "/opt/docker-compose/config/loki"
+    - "/opt/docker-compose/config/promtail"
+
+- name: Ensure Loki volume directories exist
+  become: true
+  file:
+    path: "/var/lib/docker/volumes/sh_loki_data/_data/{{ item }}"
+    state: directory
+    owner: "10001"
+    group: "10001"
+    mode: '0755'
+  with_items:
+    - "chunks"
+    - "boltdb-shipper-active"
+    - "boltdb-shipper-cache"
+    - "compactor"
+    - "wal"
+
+- name: Copy Loki config
+  template:
+    src: loki-config.yml.j2
+    dest: "/opt/docker-compose/config/loki/config.yml"
+    mode: '0644'
+    owner: ansible
+    group: ansible
+
+- name: Copy Promtail config
+  template:
+    src: promtail-config.yml.j2
+    dest: "/opt/docker-compose/config/promtail/config.yml"
+    mode: '0644'
+    owner: ansible
+    group: ansible
+
+- name: Create Docker daemon directory
+  file:
+    path: /etc/docker
+    state: directory
+    mode: '0755'
+
+- name: Configure Docker daemon for Loki
+  template:
+    src: daemon.json.j2
+    dest: /etc/docker/daemon.json
+    mode: '0644'
+  notify: restart docker
+
+- name: Create Loki data volume
+  docker_volume:
+    name: sh_loki_data
+    state: present
+
+- name: Force handlers
+  meta: flush_handlers

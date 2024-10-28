@@ -1,0 +1,20 @@
+- name: Copy retention script to remote server
+  ansible.builtin.template:
+    src: retention_script.sh.j2
+    dest: "/home/ansible/retention.sh"
+    mode: '0755'
+    owner: ansible
+    group: ansible
+
+- name: Create a cron job for the retention script
+  ansible.builtin.cron:
+    name: "Clean old S3 backups"
+    job: "/home/ansible/cleanup.sh 2>&1 | logger -t docker-backup-cleanup"
+    hour: "1"    # Run at 1 AM
+    minute: "0"
+    user: "ansible"
+
+# - name: Run retention script immediately
+#   ansible.builtin.command: "/home/ansible/retention.sh"
+#   args:
+#     chdir: /home/ansible

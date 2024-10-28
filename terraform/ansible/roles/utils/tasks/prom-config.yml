@@ -44,5 +44,16 @@
           - targets:
             - 'prometheus:9090'
         scrape_interval: 30s
+      - job_name: 'Traefik Container'
+        static_configs:
+          - targets:
+            - 'traefik:8080'
+        scrape_interval: 30s
+      - job_name: 'cAdvisor Container'
+        static_configs:
+          - targets:
+            - 'cadvisor:8080'
+        scrape_interval: 30s
+
     owner: prometheus
     group: prometheus

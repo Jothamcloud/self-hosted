@@ -1,0 +1,35 @@
+- name: Install s3cmd
+  become: true
+  ansible.builtin.apt:
+    name: s3cmd
+    state: present
+    update_cache: yes
+
+- name: Copy backup script to remote server
+  ansible.builtin.template:
+    src: backup_script.sh.j2
+    dest: "/home/ansible/backup.sh"
+    mode: '0755'
+    owner: ansible
+    group: ansible
+
+- name: Copy s3cmd config to remote server
+  ansible.builtin.template:
+    src: s3cfg.j2
+    dest: "/home/ansible/.s3cfg"
+    mode: '0600'
+    owner: ansible
+    group: ansible
+
+- name: Create a cron job for the backup script
+  ansible.builtin.cron:
+    name: "Backup Docker volumes to S3"
+    job: "/home/ansible/backup.sh 2>&1 | logger -t docker-backup"
+    hour: "*/12"
+    minute: "0"
+    user: "ansible"
+
+# - name: Run backup script immediately
+#   ansible.builtin.command: "/home/ansible/backup.sh"
+#   args:
+#     chdir: /home/ansible

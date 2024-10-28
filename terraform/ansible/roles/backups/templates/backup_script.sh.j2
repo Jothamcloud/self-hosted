@@ -1,0 +1,80 @@
+#!/bin/bash
+
+# Configure logging
+exec 1> >(logger -s -t $(basename $0)) 2>&1
+
+log_info() {
+    echo "[INFO] $1"
+}
+
+log_error() {
+    echo "[ERROR] $1"
+}
+
+log_info "Starting backup process"
+
+# Change to the Ansible user home directory
+cd /home/ansible || {
+    log_error "Failed to change to /home/ansible directory"
+    exit 1
+}
+
+# Stop Docker Compose
+log_info "Stopping Docker services"
+docker-compose -f /opt/docker-compose/docker-compose.yml down || {
+    log_error "Failed to stop Docker services"
+    exit 1
+}
+
+# Create backup directory
+log_info "Creating backup directory"
+mkdir -p backups || {
+    log_error "Failed to create backup directory"
+    exit 1
+}
+
+# List all volumes starting with 'sh' and back them up
+log_info "Starting volume backups"
+volumes=$(docker volume ls --format {% raw %}'{{.Name}}'{% endraw %} | awk '/^sh/')
+
+if [ -z "$volumes" ]; then
+    log_error "No volumes found starting with 'sh'"
+    exit 1
+fi
+
+for volume in $volumes; do
+    timestamp=$(date +'%Y-%m-%d_%H-%M-%S')
+    backup_file="${volume}_${timestamp}.tar.gz"
+    log_info "Backing up volume: $volume to $backup_file"
+    
+    docker run --rm -v "$volume":/volume_data -v "$PWD/backups":/backup alpine \
+        tar -czf /backup/"$backup_file" -C /volume_data . || {
+        log_error "Failed to backup volume: $volume"
+        continue
+    }
+    
+    log_info "Successfully backed up volume: $volume"
+done
+
+# Start Docker Compose
+log_info "Starting Docker services"
+docker-compose -f /opt/docker-compose/docker-compose.yml up -d || {
+    log_error "Failed to start Docker services"
+    exit 1
+}
+
+# Upload backups to S3
+log_info "Uploading backups to S3 bucket: {{ s3_bucket_name }}"
+s3cmd -c /home/ansible/.s3cfg sync backups/ s3://{{ s3_bucket_name }}/ || {
+    log_error "Failed to upload backups to S3"
+    exit 1
+}
+
+# Remove local copies
+log_info "Cleaning up local backup files"
+rm -rf backups/ || {
+    log_error "Failed to remove local backup directory"
+    exit 1
+}
+
+log_info "Backup process completed successfully"
