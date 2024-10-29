@@ -1,0 +1,108 @@
+- name: Get Vault container ID
+  ansible.builtin.command: docker ps -qf "name=vault"
+  register: vault_container_id
+  changed_when: false
+
+- name: Check if Vault is already initialized
+  ansible.builtin.command: "docker exec {{ vault_container_id.stdout }} vault status -format=json"
+  register: vault_status
+  changed_when: false
+  failed_when: false
+  retries: 3
+  delay: 10
+  until: vault_status.rc != 1
+
+- name: Initialize Vault and store output
+  ansible.builtin.command: >
+    docker exec {{ vault_container_id.stdout }} 
+    vault operator init -format=json
+  register: vault_init
+  when: vault_status.rc == 2
+  environment:
+    VAULT_ADDR: "http://127.0.0.1:8200"
+
+- name: Parse initialization output
+  ansible.builtin.set_fact:
+    init_data: "{{ vault_init.stdout | from_json }}"
+  when: vault_init.changed
+
+- name: Fail if init_data is not defined
+  ansible.builtin.fail:
+    msg: "The Vault initialization output could not be parsed. Ensure Vault was initialized properly."
+  when: init_data is not defined
+
+- name: Install python3-venv
+  ansible.builtin.apt:
+    name: python3-venv
+    state: present
+
+- name: Create AWS CLI virtual environment
+  ansible.builtin.command: python3 -m venv ~/awscli-venv
+  args:
+    creates: ~/awscli-venv
+
+- name: Install AWS CLI in virtual environment
+  ansible.builtin.shell: |
+    source ~/awscli-venv/bin/activate && pip install awscli
+  args:
+    executable: /bin/bash
+
+- name: Configure AWS CLI
+  shell: |
+    source ~/awscli-venv/bin/activate && \
+    mkdir -p ~/.aws && \
+    echo "[default]" > ~/.aws/config && \
+    echo "region = {{ aws_region }}" >> ~/.aws/config && \
+    echo "[default]" > ~/.aws/credentials && \
+    echo "aws_access_key_id = {{ s3_access_key }}" >> ~/.aws/credentials && \
+    echo "aws_secret_access_key = {{ s3_secret_key }}" >> ~/.aws/credentials
+  args:
+    creates: ~/.aws/config
+    executable: /bin/bash
+
+- name: Store root token in AWS Parameter Store
+  shell: |
+    source ~/awscli-venv/bin/activate && \
+    aws ssm put-parameter \
+      --name '/vault/root_token' \
+      --value '{{ init_data.root_token }}' \
+      --type 'SecureString' \
+      --region '{{ aws_region }}' \
+      --key-id '{{ aws_kms_key_id | default(omit) }}'
+  when: vault_init.changed and init_data is defined
+  args:
+    executable: /bin/bash
+
+- name: Store recovery keys (Base64) in AWS Parameter Store
+  shell: |
+    source ~/awscli-venv/bin/activate && \
+    aws ssm put-parameter \
+      --name '/vault/recovery_key_b64_{{ index + 1 }}' \
+      --value '{{ item }}' \
+      --type 'SecureString' \
+      --region '{{ aws_region }}' \
+      --key-id '{{ aws_kms_key_id | default(omit) }}'
+  loop: "{{ init_data['recovery_keys_b64'] }}"
+  loop_control:
+    index_var: index
+  when: init_data['recovery_keys_b64'] | length > 0
+  args:
+    executable: /bin/bash
+  no_log: true
+
+- name: Store recovery keys (Hex) in AWS Parameter Store
+  shell: |
+    source ~/awscli-venv/bin/activate && \
+    aws ssm put-parameter \
+      --name '/vault/recovery_key_hex_{{ index + 1 }}' \
+      --value '{{ item }}' \
+      --type 'SecureString' \
+      --region '{{ aws_region }}' \
+      --key-id '{{ aws_kms_key_id | default(omit) }}'
+  loop: "{{ init_data['recovery_keys_hex'] }}"
+  loop_control:
+    index_var: index
+  when: init_data['recovery_keys_hex'] | length > 0
+  args:
+    executable: /bin/bash
+  no_log: true

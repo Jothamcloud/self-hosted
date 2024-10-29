@@ -73,6 +73,7 @@ services:
    expose:
      - "9090"
    volumes:
+     - prometheus_data:/prometheus
      - /etc/prometheus:/etc/prometheus
    networks:
      - docker-network
@@ -145,6 +146,36 @@ services:
      - "8080"
    networks:
      - docker-network
+ vault:
+   image: hashicorp/vault:1.13
+   container_name: vault
+   restart: unless-stopped
+   cap_add:
+     - IPC_LOCK
+   labels:
+     - "traefik.enable=true"
+     - "traefik.http.routers.vault-http.entrypoints=web"
+     - "traefik.http.routers.vault-http.rule=Host(`{{ v_domain }}`)"
+     - "traefik.http.services.vault.loadbalancer.server.port=8200"
+     - "traefik.http.routers.vault-https.tls=true"
+     - "traefik.http.routers.vault-https.tls.certresolver=myresolver"
+     - "traefik.http.routers.vault-https.entrypoints=websecure"
+     - "traefik.http.routers.vault-https.rule=Host(`{{ v_domain }}`)"
+     - "traefik.http.routers.vault-http.middlewares=redirect-https"
+     - "traefik.http.middlewares.redirect-https.redirectScheme.scheme=https"
+     - "traefik.http.middlewares.redirect-https.redirectScheme.permanent=true"
+   environment:
+     - VAULT_ADDR=http://0.0.0.0:8200
+     - VAULT_API_ADDR=http://0.0.0.0:8200
+   expose:
+     - "8200"
+     - "8201"
+   volumes:
+     - vault_data:/vault/file
+     - /opt/vault/config:/vault/config:ro
+   command: server
+   networks:
+     - docker-network
   
 volumes:
  traefik_letsencrypt:
@@ -155,6 +186,10 @@ volumes:
    name: sh_grafana_data
  loki_data:
    name: sh_loki_data
+ vault_data:
+   name: sh_vault_data
+ prometheus_data:
+   name: sh_prometheus_data
 
 networks:
  docker-network:

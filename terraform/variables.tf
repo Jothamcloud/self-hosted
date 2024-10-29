@@ -80,3 +80,11 @@ variable "s3_secret_key" {
 variable "restore" {
   type = string
 }
+
+variable "init" {
+  type = string
+}
+
+variable "aws_kms_key_id" {
+  type = string
+}

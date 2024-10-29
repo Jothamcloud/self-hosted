@@ -71,6 +71,9 @@ module "null_resource" {
   s3_access_key = var.s3_access_key
   s3_secret_key = var.s3_secret_key
   restore   = var.restore
+  init = var.init
+  aws_kms_key_id = var.aws_kms_key_id
+  aws_region = var.aws_region
 }
 
 output "ec2_instance_id" {

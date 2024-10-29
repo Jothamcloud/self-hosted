@@ -1,4 +1,3 @@
----
 - hosts: all
   become: yes
   roles:
@@ -11,12 +10,16 @@
   become: yes
   roles:
     - monitoring
+    - vault        
     - docker-compose
+    - { role: vault-init, when: init == 'true' }
     - backups
+    - { role: restore, when: restore == 'true' }
 
-- hosts: all
-  become: yes
-  tasks:
-    - include_role:
-        name: restore
-      when: restore == 'true'
+    
+# - hosts: all
+#   become: yes
+#   tasks:
+#     - include_role:
+#         name: restore
+#       when: restore == 'true'

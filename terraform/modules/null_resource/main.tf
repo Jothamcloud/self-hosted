@@ -26,6 +26,9 @@ resource "null_resource" "ansible_playbook" {
       -e "s3_secret_key=${var.s3_secret_key}" \
       -e "s3_bucket_name=${var.s3_bucket_name}" \
       -e "restore=${var.restore}" \
+      -e "init=${var.init}" \
+      -e "aws_region=${var.aws_region}" \
+      -e "aws_kms_key_id=${var.aws_kms_key_id}" \
       -e "ansible_ssh_port=${var.ssh_port}"
     EOT
 

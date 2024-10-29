@@ -70,3 +70,15 @@ variable "s3_bucket_name" {
 variable "restore" {
   type = string
 }
+
+variable "init" {
+  type = string
+}
+
+variable "aws_kms_key_id" {
+  type = string
+}
+
+variable "aws_region" {
+  type        = string
+}
