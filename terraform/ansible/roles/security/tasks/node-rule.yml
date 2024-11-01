@@ -1,3 +1,8 @@
+- name: Install iptables-persistent
+  ansible.builtin.apt:
+    name: iptables-persistent
+    state: present
+
 - name: Get ID for docker network
   ansible.builtin.command:
     cmd: docker network ls --filter name=docker-network --format "{{ '{{.ID}}' }}"
@@ -5,6 +10,12 @@
 
 - name: Add IPTables rule for docker network at port 9100
   ansible.builtin.command:
-    cmd: iptables -A INPUT -i {{ docker_network_id.stdout }} -p tcp --dport 9100 -j ACCEPT
+    cmd: iptables -A INPUT -i docker0 -p tcp --dport 9100 -j ACCEPT
   when: docker_network_id.stdout | length > 0 
-  ignore_errors: yes 
+  register: iptables_modification
+  ignore_errors: yes
+
+- name: Save iptables rules
+  ansible.builtin.command:
+    cmd: netfilter-persistent save
+  when: iptables_modification.changed

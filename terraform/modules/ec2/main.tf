@@ -6,6 +6,11 @@ resource "aws_instance" "this" {
   key_name               = var.key_name
   user_data              = var.user_data
 
+  root_block_device {
+    volume_size = 52
+    volume_type = "gp2"
+  }
+
   tags = merge(
     {
       Name = var.instance_name
