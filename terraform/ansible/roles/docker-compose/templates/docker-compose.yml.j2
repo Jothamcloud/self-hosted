@@ -5,6 +5,10 @@ services:
    image: traefik:v2
    container_name: traefik
    restart: unless-stopped
+   labels:
+     - "traefik.http.serversTransports.default.forwardingTimeouts.dialTimeout=600s"
+     - "traefik.http.serversTransports.default.forwardingTimeouts.responseTimeout=600s"
+     - "traefik.http.serversTransports.default.forwardingTimeouts.idleTimeout=600s"
    command:
      - "--log.level=DEBUG"
      - "--api.insecure=true"
@@ -53,6 +57,48 @@ services:
      - jenkins_data:/var/jenkins_home
    networks:
      - docker-network
+
+ gitea:
+   image: gitea/gitea:1.22
+   container_name: gitea
+   restart: unless-stopped
+   environment:
+     - GITEA__server__HTTP_WRITE_TIMEOUT=600
+     - GITEA__server__HTTP_READ_TIMEOUT=600
+     - GITEA__server__LFS_HTTP_READ_TIMEOUT=600
+     - GITEA__server__LOCAL_COPY_READ_BUFFER_SIZE=32768
+     - GITEA__server__STREAM_READ_BUFFER_LEN=65536
+     - GITEA__server__PER_WRITE_TIMEOUT=600
+     - GITEA__server__PER_READ_TIMEOUT=600
+     - GITEA__git__TIMEOUT=600
+     - GITEA__repository__PREFERRED_UPLOAD_MAX_SIZE=1024
+     - GITEA__repository__UPLOAD_MAX_SIZE=1024
+   labels:
+     - "traefik.enable=true"
+     - "traefik.http.routers.gitea-http.entrypoints=web"
+     - "traefik.http.routers.gitea-http.rule=Host(`{{ t_domain }}`)"
+     - "traefik.http.services.gitea.loadbalancer.server.port=3000"
+     - "traefik.http.routers.gitea-https.tls=true"
+     - "traefik.http.routers.gitea-https.tls.certresolver=myresolver"
+     - "traefik.http.routers.gitea-https.entrypoints=websecure"
+     - "traefik.http.routers.gitea-https.rule=Host(`{{ t_domain }}`)"
+     - "traefik.http.routers.gitea-http.middlewares=redirect-https,gitea-timeout,gitea-buffer"
+     - "traefik.http.middlewares.redirect-https.redirectScheme.scheme=https"
+     - "traefik.http.middlewares.redirect-https.redirectScheme.permanent=true"
+     - "traefik.http.middlewares.gitea-timeout.headers.customRequestHeaders.Connection=keep-alive"
+     - "traefik.http.middlewares.gitea-timeout.headers.customResponseHeaders.Connection=keep-alive"
+     - "traefik.http.middlewares.gitea-buffer.buffering.maxRequestBodyBytes=100000000"
+     - "traefik.http.middlewares.gitea-buffer.buffering.memRequestBodyBytes=50000000"
+     - "traefik.http.services.gitea.loadbalancer.sticky.cookie=true"
+   volumes:
+     - gitea_data:/data
+     - /etc/timezone:/etc/timezone:ro
+     - /etc/localtime:/etc/localtime:ro
+   expose:
+     - "3000"
+   networks:
+     - docker-network
+    
 
  prometheus:
    image: prom/prometheus
@@ -190,6 +236,8 @@ volumes:
    name: sh_vault_data
  prometheus_data:
    name: sh_prometheus_data
+ gitea_data:
+   name: sh_gitea_data
 
 networks:
  docker-network:

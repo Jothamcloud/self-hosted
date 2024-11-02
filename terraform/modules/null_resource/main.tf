@@ -21,6 +21,7 @@ resource "null_resource" "ansible_playbook" {
       -e "g_domain=${var.grafana_fqdn}" \
       -e "p_domain=${var.prometheus_fqdn}" \
       -e "v_domain=${var.vault_fqdn}" \
+      -e "t_domain=${var.gitea_fqdn}" \
       -e "s3_access_key=${var.s3_access_key}" \
       -e "s3_secret_key=${var.s3_secret_key}" \
       -e "s3_bucket_name=${var.s3_bucket_name}" \

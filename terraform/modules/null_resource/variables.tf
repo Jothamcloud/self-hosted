@@ -50,6 +50,11 @@ variable "vault_fqdn" {
   type        = string
 }
 
+variable "gitea_fqdn" {
+  description = ""
+  type        = string
+}
+
 variable "s3_access_key" {
   type = string
 }

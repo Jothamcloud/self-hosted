@@ -66,6 +66,7 @@ module "null_resource" {
   grafana_fqdn = module.route53.grafana_fqdn
   prometheus_fqdn = module.route53.prometheus_fqdn
   vault_fqdn  = module.route53.vault_fqdn
+  gitea_fqdn = module.route53.gitea_fqdn
   ssh_port       = var.ssh_port
   s3_bucket_name  = var.s3_bucket_name
   s3_access_key = var.s3_access_key
@@ -100,4 +101,8 @@ output "prometheus_fqdn" {
 
 output "vault_fqdn" {
   value = module.route53.vault_fqdn
+}
+
+output "gitea_fqdn" {
+  value = module.route53.gitea_fqdn
 }

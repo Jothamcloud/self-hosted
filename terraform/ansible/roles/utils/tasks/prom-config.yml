@@ -37,7 +37,7 @@
       - job_name: 'Host Server'
         static_configs:
           - targets:
-            - '172.17.0.1:9100'
+            - '192.168.100.1:9100'
         scrape_interval: 15s
       - job_name: 'Prometheus Container'
         static_configs:
