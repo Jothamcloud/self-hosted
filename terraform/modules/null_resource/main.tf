@@ -1,3 +1,15 @@
+resource "local_file" "ansible_inventory" {
+  content = <<EOF
+[server]
+${var.public_ip}
+
+[worker]
+${var.worker_public_ip}
+EOF  
+filename = "./ansible/inventory.ini"
+}
+
+
 resource "null_resource" "ansible_playbook" {
   triggers = {
     instance_id = var.instance_id
@@ -7,16 +19,14 @@ resource "null_resource" "ansible_playbook" {
   depends_on = [var.instance_id]
 
   provisioner "local-exec" {
+    working_dir = "./ansible"
     command = <<EOT
       # Wait for 90 seconds to allow the server to initialize and SSH service to be ready
       echo "Waiting for 70 seconds for SSH to be available..."
       sleep 70
 
       # Running the Ansible playbook
-      ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i '${var.public_ip},' ${var.playbook} \
-      -e "ansible_host=${var.public_ip}" \
-      -e "ansible_user=ansible" \
-      -e "ansible_ssh_private_key_file=${var.private_key_path}" \
+     ansible-playbook playbook.yml \
       -e "j_domain=${var.jenkins_fqdn}" \
       -e "g_domain=${var.grafana_fqdn}" \
       -e "p_domain=${var.prometheus_fqdn}" \
@@ -33,7 +43,7 @@ resource "null_resource" "ansible_playbook" {
     EOT
 
     environment = {
-      ANSIBLE_PRIVATE_KEY_FILE = var.private_key_path
+      # ANSIBLE_PRIVATE_KEY_FILE = var.private_key_path
       EC2_PUBLIC_IP            = var.public_ip
     }
   }

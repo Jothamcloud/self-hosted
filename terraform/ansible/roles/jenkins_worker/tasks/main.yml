@@ -1,0 +1,99 @@
+- name: Install Java and required packages
+  apt:
+    name:
+      - openjdk-17-jdk
+      - git
+      - curl
+    state: present
+    update_cache: yes
+
+- name: Create Jenkins agent user
+  user:
+    name: jenkins
+    shell: /bin/bash
+    home: /home/jenkins
+    create_home: yes
+
+- name: Ensure required directories exist
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: jenkins
+    group: jenkins
+    mode: "{{ '0700' if item.endswith('.ssh') else '0755' }}"
+  with_items:
+    - /home/jenkins/.ssh
+    - /home/jenkins/agent
+
+- name: Generate SSH key for Jenkins agent
+  openssh_keypair:
+    path: "/home/jenkins/.ssh/jenkins_agent"
+    type: rsa
+    size: 4096
+    owner: jenkins
+    group: jenkins
+    mode: '0600'
+  register: jenkins_ssh_key
+
+- name: Store public key for Jenkins configuration
+  set_fact:
+    jenkins_agent_public_key: "{{ jenkins_ssh_key.public_key }}"
+
+- name: Ensure proper ownership and permissions for Jenkins SSH files
+  file:
+    path: "{{ item.path }}"
+    state: file
+    owner: jenkins
+    group: jenkins
+    mode: "{{ item.mode }}"
+  with_items:
+    - { path: "/home/jenkins/.ssh/jenkins_agent", mode: "0600" }
+    - { path: "/home/jenkins/.ssh/jenkins_agent.pub", mode: "0644" }
+
+- name: Copy public key to authorized_keys
+  copy:
+    src: "/home/jenkins/.ssh/jenkins_agent.pub"
+    dest: "/home/jenkins/.ssh/authorized_keys"
+    remote_src: yes
+    owner: jenkins
+    group: jenkins
+    mode: '0600'
+
+- name: Download Jenkins agent JAR
+  get_url:
+    url: "https://{{ j_domain }}/jnlpJars/agent.jar"
+    dest: /home/jenkins/agent/agent.jar
+    mode: '0755'
+    owner: jenkins
+    group: jenkins
+    validate_certs: no
+
+- name: Create agent wrapper script
+  template:
+    src: jenkins-agent-wrapper.sh.j2
+    dest: /home/jenkins/agent/jenkins-agent-wrapper.sh
+    mode: '0755'
+    owner: jenkins
+    group: jenkins
+
+- name: Create Jenkins agent service
+  template:
+    src: jenkins-agent.service.j2
+    dest: /etc/systemd/system/jenkins-agent.service
+    mode: '0644'
+  notify: restart jenkins-agent
+
+- name: Ensure JAVA_HOME is set for Jenkins agent service
+  lineinfile:
+    path: /etc/systemd/system/jenkins-agent.service
+    regexp: '^Environment=JAVA_HOME='
+    line: 'Environment=JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64'
+    state: present
+  notify: restart jenkins-agent
+
+- name: Ensure Jenkins agent service is enabled and started
+  systemd:
+    name: jenkins-agent
+    state: started
+    enabled: yes
+    daemon_reload: yes

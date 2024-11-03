@@ -3,17 +3,17 @@ variable "instance_id" {
   type        = string
 }
 
-variable "inventory" {
-  description = "Path to the Ansible hosts inventory file"
-}
+# variable "inventory" {
+#   description = "Path to the Ansible hosts inventory file"
+# }
 
-variable "playbook" {
-  description = "Path to the Ansible playbook"
-}
+# variable "playbook" {
+#   description = "Path to the Ansible playbook"
+# }
 
-variable "private_key_path" {
-  description = "Path to the Ansible Key"
-}
+# variable "private_key_path" {
+#   description = "Path to the Ansible Key"
+# }
 
 variable "public_ip" {
   description = "The public IP address of the EC2 instance"
@@ -80,5 +80,10 @@ variable "aws_kms_key_id" {
 }
 
 variable "aws_region" {
+  type        = string
+}
+
+variable "worker_public_ip" {
+  description = "The public IP address of the EC2 instance"
   type        = string
 }

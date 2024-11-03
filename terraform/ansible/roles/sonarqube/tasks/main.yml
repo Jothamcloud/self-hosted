@@ -1,0 +1,28 @@
+- name: Check if Docker Compose is installed
+  command: docker-compose --version
+  register: docker_compose_installed
+  ignore_errors: yes
+
+- name: Install Docker Compose if not installed
+  become: yes
+  apt:
+    name: docker-compose
+    state: present
+  when: docker_compose_installed is failed
+
+- name: Create Docker Compose directory
+  file:
+    path: /opt/sonarqube
+    state: directory
+    mode: '0755'
+
+- name: Copy Docker Compose file to the directory
+  copy:
+    src: docker-compose.yml
+    dest: /opt/sonarqube/docker-compose.yml
+    mode: '0644'
+
+- name: Start Docker Compose services
+  command: docker-compose up -d
+  args:
+    chdir: /opt/sonarqube

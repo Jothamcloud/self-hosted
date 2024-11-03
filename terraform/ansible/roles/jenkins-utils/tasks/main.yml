@@ -1,0 +1,236 @@
+- name: Remove existing Docker repository files
+  file:
+    path: "{{ item }}"
+    state: absent
+  with_items:
+    - /etc/apt/sources.list.d/docker.list
+    - /etc/apt/keyrings/docker.gpg
+    - /etc/apt/sources.list.d/trivy.list
+    - /etc/apt/keyrings/trivy.gpg
+
+- name: Install basic dependencies
+  apt:
+    name:
+      - curl
+      - wget
+      - apt-transport-https
+      - ca-certificates
+      - gnupg
+      - lsb-release
+      - unzip 
+      - python3-docker
+      - python3-pip
+      - python3-venv
+      - pipx
+    state: present
+    update_cache: yes
+
+- name: Ensure pipx's binary directory is in PATH
+  lineinfile:
+    path: /etc/profile.d/pipx.sh
+    line: 'export PATH="$HOME/.local/bin:$PATH"'
+    create: yes
+
+# - name: Create a Python virtual environment
+#   command: python3 -m venv /opt/venvs/myenv
+#   args:
+#     creates: /opt/venvs/myenv
+
+# - name: Install psycopg2-binary using pip in the virtual environment
+#   command: /opt/venvs/myenv/bin/pip install psycopg2-binary
+#   args:
+#     creates: /opt/venvs/myenv/lib/python3.*/site-packages/psycopg2
+
+# - name: Remove existing PostgreSQL installation
+#   apt:
+#     name: postgresql
+#     state: absent
+#     purge: yes  # This will also remove configuration files
+#     update_cache: yes
+
+# - name: Install PostgreSQL
+#   apt:
+#     name: postgresql
+#     state: present
+#     update_cache: yes
+
+
+
+# - name: Set PostgreSQL password for postgres user
+#   become: yes
+#   become_user: postgres
+#   postgresql_user:
+#     name: postgres
+#     password: password
+#     state: present
+
+- name: Create directory for keyrings
+  file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: '0755'
+
+- name: Add Docker GPG key
+  apt_key:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    state: present
+
+- name: Add Docker repository
+  apt_repository:
+    repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable
+    state: present
+
+- name: Install Docker
+  apt:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-buildx-plugin  
+      - docker-compose-plugin 
+    state: present
+    update_cache: yes
+
+- name: Download Trivy GPG key
+  shell: |
+    curl -fsSL https://aquasecurity.github.io/trivy-repo/deb/public.key | gpg --dearmor -o /etc/apt/keyrings/trivy.gpg
+  args:
+    creates: /etc/apt/keyrings/trivy.gpg
+
+- name: Add Trivy repository
+  apt_repository:
+    repo: deb [signed-by=/etc/apt/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb {{ ansible_distribution_release }} main
+    state: present
+    filename: trivy
+    update_cache: yes
+
+- name: Install Trivy
+  apt:
+    name: trivy
+    state: present
+    update_cache: yes
+
+- name: Download SonarQube Scanner
+  get_url:
+    url: "https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.8.0.2856-linux.zip"
+    dest: "/tmp/sonar-scanner.zip"
+
+- name: Create SonarQube Scanner directory
+  file:
+    path: /opt/sonar-scanner
+    state: directory
+    mode: '0755'
+
+- name: Unzip SonarQube Scanner
+  unarchive:
+    src: /tmp/sonar-scanner.zip
+    dest: /opt/sonar-scanner
+    remote_src: yes
+
+- name: Add SonarQube Scanner to PATH
+  copy:
+    dest: /etc/profile.d/sonar-scanner.sh
+    content: |
+      export PATH=$PATH:/opt/sonar-scanner/sonar-scanner-4.8.0.2856-linux/bin
+    mode: '0644'
+
+- name: Add jenkins user to docker group
+  user:
+    name: jenkins
+    groups: docker
+    append: yes
+
+- name: Install additional tools
+  apt:
+    name:
+      - jq
+      - git
+      - make
+    state: present
+
+# - name: Install Python packages via apt
+#   apt:
+#     name:
+#       - python3-docker
+#       - python3-pip
+#       - python3-venv
+#       - pipx
+#     state: present
+#     update_cache: yes
+    
+- name: Ensure Docker is started and enabled
+  systemd:
+    name: docker
+    state: started
+    enabled: yes
+
+# - name: Create SonarQube database
+#   postgresql_db:
+#     name: sonar
+#     state: present
+#     login_user: postgres
+#     login_password: password
+#   register: sonar_db
+#   vars:
+#     ansible_python_interpreter: /opt/venvs/myenv/bin/python
+
+# - name: Create SonarQube database user
+#   postgresql_user:
+#     name: sonar
+#     password: sonar_password
+#     priv: "sonar=*"
+#     state: present
+#     login_user: postgres
+#     login_password: password
+#   when: sonar_db.changed
+#   vars:
+#     ansible_python_interpreter: /opt/venvs/myenv/bin/python
+
+# - name: Download SonarQube
+#   get_url:
+#     url: "https://binaries.sonarsource.com/Distribution/sonarqube/sonarqube-9.9.0.zip"
+#     dest: "/tmp/sonarqube.zip"
+
+# - name: Create SonarQube directory
+#   file:
+#     path: /opt/sonarqube
+#     state: directory
+#     mode: '0755'
+
+# - name: Unzip SonarQube
+#   unarchive:
+#     src: /tmp/sonarqube.zip
+#     dest: /opt/sonarqube
+#     remote_src: yes
+
+# - name: Configure SonarQube
+#   copy:
+#     dest: /opt/sonarqube/conf/sonar.properties
+#     content: |
+#       sonar.jdbc.url=jdbc:postgresql://localhost:5432/sonar
+#       sonar.jdbc.username=sonar
+#       sonar.jdbc.password=sonar_password
+#       sonar.web.port=9000  # Change as needed
+#     mode: '0644'
+
+# - name: Start SonarQube
+#   shell: |
+#     cd /opt/sonarqube/bin/linux-x86-64 && ./sonar.sh start
+#   async: 1
+#   poll: 0
+
+# - name: Wait for SonarQube to be ready
+#   wait_for:
+#     port: 9000
+#     delay: 10
+#     timeout: 30
+
+# - name: Remove temporary files
+#   file:
+#     path: /tmp/sonar-scanner.zip
+#     state: absent
+
+# - name: Remove SonarQube ZIP file
+#   file:
+#     path: /tmp/sonarqube.zip
+#     state: absent

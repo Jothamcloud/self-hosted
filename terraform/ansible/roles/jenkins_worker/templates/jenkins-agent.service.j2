@@ -1,0 +1,14 @@
+[Unit]
+Description=Jenkins Agent
+After=network.target
+
+[Service]
+User=jenkins
+WorkingDirectory=/home/jenkins/agent
+ExecStart=/home/jenkins/agent/jenkins-agent-wrapper.sh
+Restart=always
+RestartSec=10
+StartLimitInterval=0
+
+[Install]
+WantedBy=multi-user.target

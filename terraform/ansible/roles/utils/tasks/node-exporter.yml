@@ -1,4 +1,3 @@
----
 - name: Download and Install Prometheus node_exporter
   block:
     - name: Get node_exporter release

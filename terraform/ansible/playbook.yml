@@ -1,4 +1,4 @@
-- hosts: all
+- hosts: server
   become: yes
   roles:
     - essentials
@@ -6,7 +6,7 @@
     - utils
     - security
 
-- hosts: all
+- hosts: server
   become: yes
   roles:
     - monitoring
@@ -15,3 +15,10 @@
     - { role: vault-init, when: init == 'true' }
     - backups
     - { role: restore, when: restore == 'true' }
+
+- hosts: worker
+  become: yes
+  roles:
+    - jenkins_worker
+    - jenkins-utils
+    - sonarqube

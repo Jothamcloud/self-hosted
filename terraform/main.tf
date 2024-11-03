@@ -27,9 +27,25 @@ module "ec2_instance" {
   source              = "./modules/ec2"
   subnet_id           = data.aws_subnet.default[0].id 
   instance_type       = var.instance_type
-  security_group_ids   = [module.security_group.security_group_id]
+  security_group_ids  = [module.security_group.security_group_id]
   key_name            = var.key_name
   instance_name       = var.instance_name
+  ami                 = var.ami
+
+
+  user_data = templatefile("./userdata.yml", {
+    public_key = file("./ansible_key.pub"),
+    ssh_port   = var.ssh_port
+  }) 
+}
+
+module "jenkins_worker" {
+  source              = "./modules/jenkins_worker"
+  subnet_id           = data.aws_subnet.default[0].id 
+  instance_type       = var.instance_type
+  security_group_ids  = [module.security_group.security_group_id]
+  key_name            = var.key_name
+  instance_name       = "${var.instance_name}-jenkins-worker"
   ami                 = var.ami
 
 
@@ -57,10 +73,7 @@ module "route53" {
 
 module "null_resource" {
   source         = "./modules/null_resource"
-  instance_id    = module.ec2_instance.instance_id  
-  inventory      = "./ansible/hosts"
-  playbook       = "./ansible/playbook.yml"
-  private_key_path = "./ansible_key"  
+  instance_id    =  module.ec2_instance.instance_id  
   public_ip         = module.ec2_instance.public_ip
   jenkins_fqdn = module.route53.jenkins_fqdn
   grafana_fqdn = module.route53.grafana_fqdn
@@ -75,6 +88,7 @@ module "null_resource" {
   init = var.init
   aws_kms_key_id = var.aws_kms_key_id
   aws_region = var.aws_region
+  worker_public_ip   = module.jenkins_worker.worker_public_ip
 }
 
 output "ec2_instance_id" {
@@ -105,4 +119,9 @@ output "vault_fqdn" {
 
 output "gitea_fqdn" {
   value = module.route53.gitea_fqdn
+}
+
+output "worker_public_ip" {
+  description = "Public IP of the Jenkins worker EC2 instance"
+  value       = module.jenkins_worker.worker_public_ip
 }

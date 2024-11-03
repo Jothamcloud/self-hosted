@@ -1,0 +1,9 @@
+#!/bin/bash
+
+# Wait for network connectivity
+while ! ping -c 1 {{ j_domain }} &> /dev/null; do
+    sleep 5
+done
+
+cd /home/jenkins/agent
+java -jar agent.jar -jnlpUrl https://{{ j_domain }}/computer/${HOSTNAME}/slave-agent.jnlp

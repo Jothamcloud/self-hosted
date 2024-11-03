@@ -5,6 +5,13 @@
     shell: /bin/false
     create_home: no
 
+- name: Change ownership of Node Exporter binary
+  ansible.builtin.file:
+    path: /usr/bin/node_exporter
+    owner: prometheus
+    group: prometheus
+    mode: '0755'
+
 - name: Ensure the Prometheus directory exists
   ansible.builtin.file:
     path: /etc/prometheus
